@@ -1,0 +1,4 @@
+*.vcd
+*.fst
+obj_dir/
+*.vvp
