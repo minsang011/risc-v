@@ -1,56 +1,37 @@
-`timescale 1ns / 1ps
-
+`timescale 1ns/1ps
 module tb_counter;
-logic clk=0, rst=1, en=0;
-logic [4:0] count;
+  logic clk = 0, rst, en;
+  logic [7:0] count;
+  int errors = 0;
 
-// Declaring counter class
-counter dut (.clk(clk), .rst(rst), .en(en), .count(count));
+  counter dut (.clk(clk), .rst(rst), .en(en), .count(count));
 
-// Declaring the clock period
-always #5 clk = ~clk;
+  always #5 clk = ~clk;
 
-initial begin
-    $dumpfile("tb/tb_ctr.vcd");
+  task automatic check(input logic [7:0] exp, input string what);
+    if (count !== exp) begin
+      $display("ERROR %s: count=%0d expected=%0d @%0t", what, count, exp, $time);
+      errors++;
+    end
+  endtask
+
+  initial begin
+    $dumpfile("build/tb_counter.vcd");
     $dumpvars(0, tb_counter);
-    // Begin
-    rst=1; en=0;
-    #12 
-    // FIRST: Checks it increments successfully
-    rst=0; en=1;
-    #100;
-    if (count==5'd10) begin
-        $display("FIRST TEST PASS count = %d", count);
-    end else begin
-        $display("FIRST TEST FAIL count == %d", count);
-    end
-    // SECOND: Checks rst signal
-    rst=1; en=1;
-    #100;
-    if (count==5'd0) begin
-        $display("SECOND TEST PASS count = %d", count);
-    end else begin
-        $display("SECOND TEST FAIL count == %d", count);
-    end
-    // THIRD == FIRST
-    rst=0; en=1;
-    #100;
-    if (count==5'd10) begin
-        $display("THIRD TEST PASS count = %d", count);
-    end else begin
-        $display("THIRD TEST FAIL count == %d", count);
-    end
-    // FOURTH: Checks it holds the value well
-    rst=0; en=0;
-    #100;
-    if (count==5'd10) begin
-        $display("FOURTH TEST PASS count = %d", count);
-    end else begin
-        $display("FOURTH TEST FAIL count == %d", count);
-    end
- 
-
+    rst = 1; en = 0;
+    repeat (2) @(posedge clk); #1;
+    check(8'd0,  "reset");
+    rst = 0; en = 1;
+    repeat (10) @(posedge clk); #1;
+    check(8'd10, "count 10");
+    en = 0;
+    repeat (3) @(posedge clk); #1;
+    check(8'd10, "hold when en=0");
+    en = 1;
+    repeat (246) @(posedge clk); #1;
+    check(8'd0,  "wraparound 255->0");
+    if (errors == 0) $display("PASS");
+    else             $display("FAIL: %0d errors", errors);
     $finish;
-end
-
+  end
 endmodule
