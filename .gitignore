@@ -1,4 +1,5 @@
+build/
+sanity/
+.DS_Store
 *.vcd
 *.fst
-obj_dir/
-*.vvp
