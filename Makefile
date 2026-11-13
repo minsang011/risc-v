@@ -17,6 +17,7 @@ PKG_DIR := $(RTL_DIR)/rv32i_pkg.sv
 # EX) alu_tb_SRCS   := $(PKG_DIR) rtl/alu.sv tb/alu_tb.sv 
 pkg_test_SRCS := $(PKG_DIR) tb/pkg_test.sv
 alu_SRCS := $(PKG_DIR) $(RTL_DIR)/alu.sv
+alu_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/alu.sv $(TB_DIR)/alu_tb.sv
 
 
 # Condition to prevent unsuppported simulator
@@ -34,7 +35,7 @@ endif
 .PHONY: sim compile wave clean lint
 
 sim: compile
-	$(RUN) | tee $(BUILD_DIR)/$(TB).log && grep -q '^PASS' $(BUILD_DIR)/$(TB).log
+	$(RUN) | tee $(BUILD_DIR)/$(TB).log && grep -q '^PASS $(TB)$$' $(BUILD_DIR)/$(TB).log
 
 compile:
 	mkdir -p $(BUILD_DIR) && $(COMPILE)
