@@ -12,3 +12,7 @@
 ## FENCE
 **Decision:** FENCE is not needed, NOP will replace it 
 **Reason:** To keep a beauty of the simplicity of RISC-V, it's better to have a single core with no cache to achieve the hardware-level completion of memory ordering. 
+
+## Synchronous decision
+**Decision:** Decided to only work in posedge clk, no negedge rst
+**Reason:** More familiar

@@ -18,6 +18,7 @@ PKG_DIR := $(RTL_DIR)/rv32i_pkg.sv
 pkg_test_SRCS := $(PKG_DIR) tb/pkg_test.sv
 alu_SRCS := $(PKG_DIR) $(RTL_DIR)/alu.sv
 alu_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/alu.sv $(TB_DIR)/alu_tb.sv
+regfile_SRCS := $(PKG_DIR) $(RTL_DIR)/regfile.sv
 
 
 # Condition to prevent unsuppported simulator
