@@ -5,7 +5,7 @@
 package rv32i_pkg;
   // Each module imports this package but uses only some of its constants,
   // so unused-parameter warnings here are expected.
-  
+
   /* verilator lint_off UNUSEDPARAM */
 
   // ----------------------------------------------------------------
@@ -92,6 +92,14 @@ package rv32i_pkg;
     ALU_OR,
     ALU_AND
   } alu_op_e;
+
+  typedef enum logic [2:0] {
+    IMM_I,
+    IMM_S,
+    IMM_B,
+    IMM_U,
+    IMM_J
+  } imm_type_e;
 
   /* verilator lint_on UNUSEDPARAM */
 
