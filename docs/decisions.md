@@ -16,3 +16,7 @@
 ## Synchronous decision
 **Decision:** Decided to only work in posedge clk, no negedge rst
 **Reason:** More familiar
+
+## Memory and branch mechanism (determining signedness and size)
+**Decision:** Decided to wire funct3 bits directly to the control, as stated in the spec, rather than having decode to translate it 
+**Reason:** Since funct3 bits are intended to show size and signedness by each bit's index (funct3[1:0] == size, funct3[2] == signedness), it's simpler and safer to have a direct connection in the hardware. 

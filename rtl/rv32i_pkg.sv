@@ -12,6 +12,11 @@ package rv32i_pkg;
   // 1. Widths
   // ----------------------------------------------------------------
   localparam int XLEN = 32;
+  // ALU operand selects (decoder outputs, top-level mux selects)
+  localparam logic ALU_A_RS1 = 1'b0;
+  localparam logic ALU_A_PC  = 1'b1;
+  localparam logic ALU_B_RS2 = 1'b0;
+  localparam logic ALU_B_IMM = 1'b1;
 
   // ----------------------------------------------------------------
   // 2. Major opcodes: instr[6:0]  (Table 72)
@@ -94,12 +99,19 @@ package rv32i_pkg;
   } alu_op_e;
 
   typedef enum logic [2:0] {
-    IMM_I,
-    IMM_S,
-    IMM_B,
-    IMM_U,
-    IMM_J
+    IMM_I, // Immediate
+    IMM_S, // Store
+    IMM_B, // Branch 
+    IMM_U, // Upper
+    IMM_J // Jump
   } imm_type_e;
+
+  typedef enum logic [1:0] {
+    WB_ALU, // ALU result writeback, AUIPC etc
+    WB_MEM, // Load data writeback, LW etc
+    WB_PC4, // Return address writeback, JAL etc
+    WB_IMM // Immediate value writeback, LUI
+  } wb_sel_e;
 
   /* verilator lint_on UNUSEDPARAM */
 
