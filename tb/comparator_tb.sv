@@ -2,8 +2,8 @@ module comparator_tb;
     import rv32i_pkg::*;
 
     logic [31:0] rs1_data, rs2_data;
-    logic [2:0] funct3;
-    logic branch;
+    logic [2:0]  funct3;
+    logic        taken;
 
     int error = 0;
 
@@ -11,34 +11,31 @@ module comparator_tb;
 
     // 1. Reference model
     function automatic logic ref_comp(input logic [31:0] t_rs1_data, input logic [31:0] t_rs2_data,
-                                input logic [2:0] t_funct3);
-        logic t_branch;
+                                      input logic [2:0]  t_funct3);
+        logic t_taken;
 
         case (t_funct3)
-            F3_BR_BEQ: t_branch = (t_rs1_data == t_rs2_data) ? 1'b1 : 1'b0;
-            F3_BR_BNE: t_branch = (t_rs1_data != t_rs2_data) ? 1'b1 : 1'b0;
-            // BLT BGE BLTU BGEU, use different comparison to avoid hidden bugs
-            F3_BR_BLT: t_branch = (int'(t_rs1_data) < int'(t_rs2_data)) ? 1'b1 : 1'b0;
-            F3_BR_BGE: t_branch = (int'(t_rs1_data) >= int'(t_rs2_data)) ? 1'b1 : 1'b0;
-            F3_BR_BLTU: t_branch = ({1'b0, t_rs1_data} < {1'b0, t_rs2_data}) ? 1'b1 : 1'b0;
-            F3_BR_BGEU: t_branch = ({1'b0, t_rs1_data} >= {1'b0, t_rs2_data}) ? 1'b1 : 1'b0;
-
-            default: t_branch = 1'b0;
+            F3_BR_BEQ:  t_taken = (t_rs1_data == t_rs2_data) ? 1'b1 : 1'b0;
+            F3_BR_BNE:  t_taken = (t_rs1_data != t_rs2_data) ? 1'b1 : 1'b0;
+            F3_BR_BLT:  t_taken = (int'(t_rs1_data) <  int'(t_rs2_data)) ? 1'b1 : 1'b0;
+            F3_BR_BGE:  t_taken = (int'(t_rs1_data) >= int'(t_rs2_data)) ? 1'b1 : 1'b0;
+            F3_BR_BLTU: t_taken = ({1'b0, t_rs1_data} <  {1'b0, t_rs2_data}) ? 1'b1 : 1'b0;
+            F3_BR_BGEU: t_taken = ({1'b0, t_rs1_data} >= {1'b0, t_rs2_data}) ? 1'b1 : 1'b0;
+            default:    t_taken = 1'b0;
         endcase
 
-        return t_branch;
-        
+        return t_taken;
     endfunction
 
     // 2. Checker
     task automatic check(input logic [31:0] t_rs1_data, input logic [31:0] t_rs2_data,
-                         input logic [2:0] t_funct3, input logic ref_branch, input string what); 
-        // Drive argument to the DUT
+                         input logic [2:0]  t_funct3,   input logic exp_taken, input string what);
+        // Drive arguments to the DUT
         rs1_data = t_rs1_data; rs2_data = t_rs2_data; funct3 = t_funct3;
-        #1; // Wait 1 time period to be updated
-        if (branch !== ref_branch) begin
+        #1; // Wait for the combinational output to settle
+        if (taken !== exp_taken) begin
             $display("ERROR %s: f3=%b rs1=%h rs2=%h got=%b exp=%b",
-                     what, t_funct3, t_rs1_data, t_rs2_data, branch, ref_branch);
+                     what, t_funct3, t_rs1_data, t_rs2_data, taken, exp_taken);
             error++;
         end
     endtask
@@ -76,26 +73,45 @@ module comparator_tb;
         logic [31:0] a, b;
         logic [2:0]  f;
 
-        // 1. Directed: every edge pair x all 8 funct3 values
+        $dumpfile("build/comparator_tb.vcd");
+        $dumpvars(0, comparator_tb);
+
+        // 1. Hand-calculated: equal, less, greater, and signed vs unsigned disagreement
+        //    (expected values written by hand, independent of ref_comp)
+        check(32'hFFFFFFFF, 32'hFFFFFFFF, F3_BR_BEQ,  1'b1, "BEQ equal negatives");
+        check(32'hFFFFFFFF, 32'hFFFFFFFF, F3_BR_BNE,  1'b0, "BNE equal negatives");
+        check(32'h80000000, 32'h00000001, F3_BR_BLT,  1'b1, "BLT -2^31 < 1 signed");
+        check(32'h80000000, 32'h00000001, F3_BR_BLTU, 1'b0, "BLTU 2^31 > 1 unsigned");
+        check(32'h80000000, 32'h00000001, F3_BR_BGE,  1'b0, "BGE -2^31 not >= 1");
+        check(32'h80000000, 32'h00000001, F3_BR_BGEU, 1'b1, "BGEU 2^31 >= 1");
+        check(32'h00000001, 32'hFFFFFFFF, F3_BR_BLT,  1'b0, "BLT 1 not < -1");
+        check(32'h00000001, 32'hFFFFFFFF, F3_BR_BLTU, 1'b1, "BLTU 1 < 0xFFFFFFFF");
+        check(32'h00000005, 32'h00000005, F3_BR_BLT,  1'b0, "BLT equal is not less");
+        check(32'h00000005, 32'h00000005, F3_BR_BGE,  1'b1, "BGE equal counts");
+        check(32'h00000005, 32'h00000005, F3_BR_BLTU, 1'b0, "BLTU equal is not less");
+        check(32'h00000005, 32'h00000005, F3_BR_BGEU, 1'b1, "BGEU equal counts");
+        check(32'h00000005, 32'h00000005, 3'b010,     1'b0, "invalid funct3 010");
+        check(32'h00000005, 32'h00000005, 3'b011,     1'b0, "invalid funct3 011");
+
+        // 2. Every edge pair x all 8 funct3 values, against the reference model
         //    (covers equality incl. negative, sign boundary, and invalid 010/011 -> 0)
         for (int i = 0; i < 5; i++)
             for (int j = 0; j < 5; j++)
                 for (int k = 0; k < 8; k++) begin
                     a = edge_val(i); b = edge_val(j); f = k[2:0];
-                    check(a, b, f, ref_comp(a, b, f), "directed");
+                    check(a, b, f, ref_comp(a, b, f), "edge pair");
                 end
 
-        // 2. Random
+        // 3. Random
         for (int n = 0; n < 2000; n++) begin
             a = rand_operand(); b = rand_operand(); f = rand_branch_f3();
             check(a, b, f, ref_comp(a, b, f), "random");
         end
 
-        // 3. Summary
+        // 4. Summary
         if (error == 0) $display("PASS comparator_tb");
         else            $fatal(1, "FAIL: %0d check(s) failed", error);
         $finish;
     end
-    
-    
+
 endmodule
