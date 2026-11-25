@@ -24,6 +24,7 @@ imm_gen_SRCS := $(PKG_DIR) $(RTL_DIR)/imm_gen.sv
 imm_gen_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/imm_gen.sv $(TB_DIR)/imm_gen_tb.sv
 decoder_SRCS := $(PKG_DIR) $(RTL_DIR)/decoder.sv
 decoder_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/decoder.sv $(TB_DIR)/decoder_tb.sv
+comparator_SRCS := $(PKG_DIR) $(RTL_DIR)/comparator.sv
 
 
 # Condition to prevent unsuppported simulator

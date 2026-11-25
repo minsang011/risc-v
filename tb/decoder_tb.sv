@@ -93,7 +93,7 @@ module decoder_tb;
         $dumpfile("build/decoder_tb.vcd");
         $dumpvars(0, decoder_tb);
 
-        //                                rw  alu_src_a   alu_src_b   alu_op     imm    mr mw wb_sel  br j  jr h  il
+        // rw  alu_src_a   alu_src_b   alu_op     imm    mr mw wb_sel  br j  jr h  il
         // ---- All 37 user-level RV32I instructions + FENCE, ECALL, EBREAK, NOP ----
         check(32'h123450B7, vec(Y, ALU_A_RS1, ALU_B_RS2, ALU_ADD,  IMM_U, N, N, WB_IMM, N, N, N, N, N), "lui ra, 0x12345");
         check(32'h00001097, vec(Y, ALU_A_PC,  ALU_B_IMM, ALU_ADD,  IMM_U, N, N, WB_ALU, N, N, N, N, N), "auipc ra, 0x1");
