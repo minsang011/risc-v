@@ -13,6 +13,31 @@
 // The branch comparator reads rs1/rs2 directly, so the ALU is free for the target.
 // Load/store width and branch condition are funct3, wired directly from instr[14:12].
 
+//           ┌──────────────── next-PC logic ◀── branch, jump, jalr (+ comparator result)
+//           ▼
+//  PC ──▶ IMEM ──instr──▶ DECODER ──▶ (all control signals)
+//  │                         │
+//  │                    ┌────┴─────┐
+//  │        instr ────▶ │ imm_gen  │◀── imm_type
+//  │                    └────┬─────┘
+//  │                         imm
+//  │   ┌──────────┐          │
+//  │   │ register │ rdata1 ─▶[mux A]◀── alu_src_a  (rs1 or PC)
+//  └──▶│   file   │             │
+//      │          │ rdata2 ─▶[mux B]◀── alu_src_b  (rs2 or imm)
+//      │◀reg_write│             │
+//      └────▲─────┘          ┌──▼──┐
+//           │                │ ALU │◀── alu_op
+//           │                └──┬──┘
+//           │                   │ result (= address for loads/stores)
+//           │              ┌────▼─────┐
+//           │              │ data mem │◀── mem_read, mem_write
+//           │              └────┬─────┘
+//           │                   │
+//           └────────────── [wb mux]◀── wb_sel  (ALU / MEM / PC+4 / IMM)
+
+//  halt logic ◀── halt, illegal
+
 module decoder
     import rv32i_pkg::*;
     (

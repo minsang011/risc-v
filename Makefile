@@ -11,6 +11,9 @@ SW_DIR := sw
 TB_DIR := tb
 RTL_DIR := rtl
 PKG_DIR := $(RTL_DIR)/rv32i_pkg.sv
+# ---- RISC-V programs: sw/<name>.S -> build/<name>.hex (+ .dump for checking) ----
+RISCV_PREFIX ?= riscv64-unknown-elf-
+RV_FLAGS     := -march=rv32i -mabi=ilp32 -nostdlib -Ttext=0
 
 
 # One line per unit test: <name>_SRCS, package first
@@ -26,6 +29,10 @@ decoder_SRCS := $(PKG_DIR) $(RTL_DIR)/decoder.sv
 decoder_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/decoder.sv $(TB_DIR)/decoder_tb.sv
 comparator_SRCS := $(PKG_DIR) $(RTL_DIR)/comparator.sv
 comparator_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/comparator.sv $(TB_DIR)/comparator_tb.sv
+dmem_SRCS := $(PKG_DIR) $(RTL_DIR)/dmem.sv
+dmem_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/dmem.sv $(TB_DIR)/dmem_tb.sv
+imem_SRCS := $(PKG_DIR) $(RTL_DIR)/imem.sv
+imem_tb_SRCS := $(PKG_DIR) $(RTL_DIR)/imem.sv $(TB_DIR)/imem_tb.sv
 
 
 # Condition to prevent unsuppported simulator
@@ -38,6 +45,25 @@ RUN     = ./$(BUILD_DIR)/obj_dir/V$(TB)
 else
 $(error Unsupported TOOL='$(TOOL)', use icarus or verilator)
 endif
+
+
+$(BUILD_DIR)/%.expect: $(BUILD_DIR)/%.elf
+	$(RISCV_PREFIX)objdump -d $< | awk '/^ *[0-9a-f]+:/ {print $$2}' > $@
+
+$(BUILD_DIR)/%.elf: $(SW_DIR)/%.S
+	mkdir -p $(BUILD_DIR)
+	$(RISCV_PREFIX)gcc $(RV_FLAGS) -o $@ $<
+
+$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf
+	$(RISCV_PREFIX)objcopy -O binary $< $@
+
+$(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.bin
+	hexdump -v -e '1/4 "%08x\n"' $< > $@
+
+$(BUILD_DIR)/%.dump: $(BUILD_DIR)/%.elf
+	$(RISCV_PREFIX)objdump -d $< > $@
+
+.PRECIOUS: $(BUILD_DIR)/%.elf $(BUILD_DIR)/%.bin
 
 # -----------------COMMAND LINES------------------
 .PHONY: sim compile wave clean lint
